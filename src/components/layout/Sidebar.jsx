@@ -35,11 +35,15 @@ const navGroups = [
     ],
   },
   {
-    items: [
-      { to: '/abonnement', labelKey: 'sidebar.abonnement', icon: 'bi-credit-card', allowedRoles: ['SuperAdmin', 'Admin'] },
-      { to: '/zahlung',    labelKey: 'sidebar.zahlung',    icon: 'bi-wallet2', allowedRoles: ['SuperAdmin', 'Admin'] },
-      
-    ],
+    accordion: {
+      labelKey: 'sidebar.abonnement',
+      icon: 'bi-credit-card',
+      allowedRoles: ['SuperAdmin', 'Admin'],
+      items: [
+        { to: '/abonnement', labelKey: 'sidebar.abonnement', icon: 'bi-credit-card-2-front' },
+        { to: '/zahlung', labelKey: 'sidebar.zahlung', icon: 'bi-wallet2' },
+      ],
+    },
   },
 ];
 
@@ -47,6 +51,7 @@ export default function Sidebar({ collapsed = false, onNavigate }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [avatarError, setAvatarError] = useState(false); // img yüklenemezse fallback
+  const [isBillingOpen, setIsBillingOpen] = useState(true);
   const userRolle = user?.rolle ?? '';
 
   const avatarUrl = getAvatarUrl(user?.bild);
@@ -68,29 +73,70 @@ export default function Sidebar({ collapsed = false, onNavigate }) {
       <nav className="p-2 flex-grow-1 mt-5 overflow-auto"> {/* mt-5: ögeleri biraz aşağıya aldık */}
         {navGroups.map((group, gi) => (
           <div key={gi} className={gi > 0 ? 'mt-0' : ''}> {/* mt-0: grup arası boşluğu kaldırdık */}
-            <ul className="nav nav-pills flex-column " style={{ gap: '1px', }}> {/* gap:1px ile dikey aralığı küçülttük */}
-              {group.items
-                .filter(item => !item.allowedRoles || hasRole(userRolle, item.allowedRoles)) // rol kısıtı yoksa veya rolle uyuyorsa göster
-                .map((item) => {
-                const label = t(item.labelKey);
-                return (
-                  <li className="nav-item" key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.end}
-                      onClick={onNavigate}
-                      title={collapsed ? label : undefined}
-                      className={({ isActive }) =>
-                        `nav-link d-flex align-items-center gap-2 sidebar-link${isActive ? ' active' : ''}`
-                      }
-                    >
-                      <i className={`bi ${item.icon} sidebar-link-icon`} />
-                      <span className="sidebar-link-label">{label}</span>
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
+            {group.items ? (
+              <ul className="nav nav-pills flex-column " style={{ gap: '1px' }}> {/* gap:1px ile dikey aralığı küçülttük */}
+                {group.items
+                  .filter(item => !item.allowedRoles || hasRole(userRolle, item.allowedRoles)) // rol kısıtı yoksa veya rolle uyuyorsa göster
+                  .map((item) => {
+                    const label = t(item.labelKey);
+                    return (
+                      <li className="nav-item" key={item.to}>
+                        <NavLink
+                          to={item.to}
+                          end={item.end}
+                          onClick={onNavigate}
+                          title={collapsed ? label : undefined}
+                          className={({ isActive }) =>
+                            `nav-link d-flex align-items-center gap-2 sidebar-link${isActive ? ' active' : ''}`
+                          }
+                        >
+                          <i className={`bi ${item.icon} sidebar-link-icon`} />
+                          <span className="sidebar-link-label">{label}</span>
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+              </ul>
+            ) : null}
+
+            {group.accordion && (!group.accordion.allowedRoles || hasRole(userRolle, group.accordion.allowedRoles)) ? (
+              <div className="sidebar-accordion">
+                <button
+                  type="button"
+                  className={`sidebar-accordion-toggle nav-link d-flex align-items-center gap-2 sidebar-link${isBillingOpen ? ' open' : ''}`}
+                  onClick={() => setIsBillingOpen((prev) => !prev)}
+                  title={collapsed ? t(group.accordion.labelKey) : undefined}
+                  aria-expanded={isBillingOpen}
+                >
+                  <i className={`bi ${group.accordion.icon} sidebar-link-icon`} />
+                  <span className="sidebar-link-label">{t(group.accordion.labelKey)}</span>
+                  <i className={`bi bi-chevron-down ms-auto sidebar-accordion-chevron${isBillingOpen ? ' open' : ''}`} />
+                </button>
+
+                <div className={`sidebar-accordion-panel${isBillingOpen && !collapsed ? ' open' : ''}`}>
+                  <ul className="nav nav-pills flex-column sidebar-accordion-children" style={{ gap: '1px' }}>
+                    {group.accordion.items.map((item) => {
+                      const label = t(item.labelKey);
+                      return (
+                        <li className="nav-item" key={item.to}>
+                          <NavLink
+                            to={item.to}
+                            onClick={onNavigate}
+                            title={collapsed ? label : undefined}
+                            className={({ isActive }) =>
+                              `nav-link d-flex align-items-center gap-2 sidebar-link${isActive ? ' active' : ''}`
+                            }
+                          >
+                            <i className={`bi ${item.icon} sidebar-link-icon`} />
+                            <span className="sidebar-link-label">{label}</span>
+                          </NavLink>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
           </div>
         ))}
       </nav>
